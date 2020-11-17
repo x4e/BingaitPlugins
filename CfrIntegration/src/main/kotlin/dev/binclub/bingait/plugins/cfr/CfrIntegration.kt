@@ -8,7 +8,7 @@ import dev.binclub.bingait.api.event.events.ResourcePanelTabsEvent
  *
  * @author cook 16/Sep/2020
  */
-class CfrIntegration: BingaitPlugin() {
+object CfrIntegration: BingaitPlugin() {
 	override val id: String = "cfr_integration"
 	override val name: String = "CFR Integration"
 	override val description: String = "Adds integration with benf's CFR"

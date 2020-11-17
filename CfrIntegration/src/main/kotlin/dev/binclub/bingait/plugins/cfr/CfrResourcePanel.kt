@@ -11,6 +11,9 @@ import org.benf.cfr.reader.api.OutputSinkFactory.SinkType.EXCEPTION
 import org.benf.cfr.reader.api.OutputSinkFactory.SinkType.JAVA
 import org.benf.cfr.reader.api.SinkReturns.ExceptionMessage
 import org.benf.cfr.reader.bytecode.analysis.parse.utils.Pair
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants
+import org.fife.ui.rtextarea.RTextScrollPane
 import java.awt.GridLayout
 import java.io.DataInput
 import java.io.IOException
@@ -34,8 +37,11 @@ class CfrResourcePanel(
 	init {
 		layout = GridLayout()
 		
-		val text = JTextArea()
-		add(JScrollPane(text))
+		val text = RSyntaxTextArea(20, 60)
+		text.syntaxEditingStyle = SyntaxConstants.SYNTAX_STYLE_JAVA
+		text.isCodeFoldingEnabled = true
+		val sp = RTextScrollPane(text)
+		add(sp)
 		
 		text.isEditable = false
 		
@@ -59,8 +65,10 @@ class CfrResourcePanel(
 							} else {
 								excep.append(it.toString())
 							}
-						} else {
+						} else if (sinkType == JAVA) {
 							sb.append(it)
+						} else {
+							// maybe do something with it?
 						}
 					}
 				

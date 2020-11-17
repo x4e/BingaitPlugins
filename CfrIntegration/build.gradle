@@ -13,9 +13,11 @@ configurations {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
 	implementation 'com.github.leibnitz27:cfr:master-SNAPSHOT'
 	include 'com.github.leibnitz27:cfr:master-SNAPSHOT'
-	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
+	implementation 'com.fifesoft:rsyntaxtextarea:3.1.1'
+	include 'com.fifesoft:rsyntaxtextarea:3.1.1'
 }
 
 jar {

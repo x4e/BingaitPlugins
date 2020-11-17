@@ -13,9 +13,9 @@ configurations {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
 	implementation 'club.minnced:java-discord-rpc:2.0.1'
 	include 'club.minnced:java-discord-rpc:2.0.1'
-    implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
 }
 
 jar {
