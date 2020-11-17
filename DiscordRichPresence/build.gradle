@@ -20,6 +20,7 @@ dependencies {
 
 jar {
 	from { configurations.include.collect { it.isDirectory() ? it : zipTree(it) } }
+    from "LICENSE"
 }
 
 compileKotlin {

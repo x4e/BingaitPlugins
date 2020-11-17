@@ -2,11 +2,7 @@ package dev.binclub.bingait.plugins.fernflower
 
 import dev.binclub.bingait.api.BingaitPlugin
 import dev.binclub.bingait.api.event.events.ResourcePanelTabsEvent
-import org.jetbrains.java.decompiler.main.DecompilerContext
-import org.jetbrains.java.decompiler.main.Fernflower
 import org.jetbrains.java.decompiler.main.decompiler.BaseDecompiler
-import org.jetbrains.java.decompiler.struct.ContextUnit
-import org.jetbrains.java.decompiler.struct.StructClass
 import java.io.DataInput
 import java.io.File
 import java.util.*
