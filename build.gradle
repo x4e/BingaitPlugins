@@ -12,6 +12,7 @@ repositories {
 subprojects {
     project(':CfrIntegration')
 	project(':DiscordRichPresence')
+    project(':FernflowerIntegration')
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8

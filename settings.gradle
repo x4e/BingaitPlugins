@@ -1,3 +1,4 @@
 rootProject.name = 'BingaitPlugins'
 include ":CfrIntegration"
 include ":DiscordRichPresence"
+include ":FernflowerIntegration"
