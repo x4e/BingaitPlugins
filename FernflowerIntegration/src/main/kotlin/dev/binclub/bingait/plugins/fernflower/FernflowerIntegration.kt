@@ -32,7 +32,6 @@ object FernflowerIntegration : BingaitPlugin() {
 		
 		val decompiler = BaseDecompiler(
 			{ externalPath, internalPath ->
-				println("Requested $externalPath $internalPath")
 				byteArray
 			},
 			resultSaver,

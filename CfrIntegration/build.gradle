@@ -1,9 +1,9 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
+	id 'org.jetbrains.kotlin.jvm'
 }
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 	maven { url 'https://jitpack.io' }
 }
 
@@ -12,7 +12,7 @@ configurations {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation "org.jetbrains.kotlin:kotlin-stdlib"
 	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
 	implementation 'com.github.leibnitz27:cfr:master-SNAPSHOT'
 	include 'com.github.leibnitz27:cfr:master-SNAPSHOT'
@@ -26,11 +26,11 @@ jar {
 }
 
 compileKotlin {
-	kotlinOptions.jvmTarget= 1.8
+	kotlinOptions.jvmTarget = 1.8
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '6.3'
+	gradleVersion = '6.3'
 }
 
 project.buildDir = project.parent.buildDir

@@ -1,34 +1,35 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.4.10'
+	id 'org.jetbrains.kotlin.jvm' version '1.4.10'
 }
 
 group 'dev.binclub'
 version '1.0'
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 }
 
 subprojects {
-    project(':CfrIntegration')
+	project(':CfrIntegration')
 	project(':DiscordRichPresence')
-    project(':FernflowerIntegration')
-
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-
-    repositories {
-        mavenCentral()
-    }
+	project(':FernflowerIntegration')
+	project(':KrakatauIntegration')
+	
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+	
+	repositories {
+		mavenCentral()
+	}
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation "org.jetbrains.kotlin:kotlin-stdlib"
 	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
 }
 
 compileKotlin {
-	kotlinOptions.jvmTarget= 1.8
+	kotlinOptions.jvmTarget = 1.8
 }
 
 allprojects {

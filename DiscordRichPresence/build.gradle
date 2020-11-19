@@ -1,10 +1,10 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
+	id 'org.jetbrains.kotlin.jvm'
 }
 
 repositories {
-    mavenCentral()
-    jcenter()
+	mavenCentral()
+	jcenter()
 }
 
 configurations {
@@ -12,7 +12,7 @@ configurations {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation "org.jetbrains.kotlin:kotlin-stdlib"
 	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
 	implementation 'club.minnced:java-discord-rpc:2.0.1'
 	include 'club.minnced:java-discord-rpc:2.0.1'
@@ -20,15 +20,15 @@ dependencies {
 
 jar {
 	from { configurations.include.collect { it.isDirectory() ? it : zipTree(it) } }
-    from "LICENSE"
+	from "LICENSE"
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget= 1.8
+	kotlinOptions.jvmTarget = 1.8
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '6.3'
+	gradleVersion = '6.3'
 }
 
 project.buildDir = project.parent.buildDir
