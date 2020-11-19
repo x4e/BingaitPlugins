@@ -1,5 +1,6 @@
 package dev.binclub.bingait.plugins.krakatau
 
+import dev.binclub.bingait.api.BingaitThreadpool
 import dev.binclub.bingait.api.event.events.ResourcePanelTabsEvent
 import dev.binclub.bingait.api.util.readBytes
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
@@ -28,11 +29,14 @@ class KrakatauResourcePanel(
 		add(sp)
 		
 		text.isEditable = false
-		try {
-			text.text = KrakatauIntegration.decompile(treeItem, classFileName, byteProvider().readBytes(), classPathProvider)
-		} catch (t: Throwable) {
-			if (text.text.isBlank()) {
-				text.text = t.stackTraceToString()
+		text.text = "Please Wait..."
+		BingaitThreadpool.submitTask("Decompiling with Krakatau") {
+			try {
+				text.text = KrakatauIntegration.decompile(treeItem, classFileName, byteProvider().readBytes(), classPathProvider)
+			} catch (t: Throwable) {
+				if (text.text.isBlank()) {
+					text.text = t.stackTraceToString()
+				}
 			}
 		}
 	}

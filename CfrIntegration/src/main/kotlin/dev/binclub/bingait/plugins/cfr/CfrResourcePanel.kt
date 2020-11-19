@@ -1,5 +1,6 @@
 package dev.binclub.bingait.plugins.cfr
 
+import dev.binclub.bingait.api.BingaitThreadpool
 import dev.binclub.bingait.api.util.readBytes
 import dev.binclub.bingait.api.util.removeBingait
 import org.benf.cfr.reader.api.CfrDriver
@@ -44,87 +45,94 @@ class CfrResourcePanel(
 		add(sp)
 		
 		text.isEditable = false
-		
-		val excep = StringBuilder()
-		try {
-			val sb = StringBuilder()
-			val sink = object: OutputSinkFactory {
-				override fun <T: Any?> getSink(
-					sinkType: OutputSinkFactory.SinkType,
-					sinkClass: OutputSinkFactory.SinkClass
-				): OutputSinkFactory.Sink<T> =
-					OutputSinkFactory.Sink {
-						if (sinkType == EXCEPTION) {
-							if (it is ExceptionMessage) {
-								excep.append("Path: ${it.path}\n")
-								excep.append("Message: ${it.message}\n")
-								val writer = StringWriter()
-								it.thrownException.removeBingait()
-								it.thrownException.printStackTrace(PrintWriter(writer))
-								excep.append(it.thrownException.stackTraceToString())
+		text.text = "Please Wait..."
+		BingaitThreadpool.submitTask("Decompiling with CFR") {
+			val excep = StringBuilder()
+			val decompiled = try {
+				val sb = StringBuilder()
+				val sink = object : OutputSinkFactory {
+					override fun <T : Any?> getSink(
+						sinkType: OutputSinkFactory.SinkType,
+						sinkClass: OutputSinkFactory.SinkClass
+					): OutputSinkFactory.Sink<T> =
+						OutputSinkFactory.Sink {
+							if (sinkType == EXCEPTION) {
+								if (it is ExceptionMessage) {
+									excep.append("Path: ${it.path}\n")
+									excep.append("Message: ${it.message}\n")
+									val writer = StringWriter()
+									it.thrownException.removeBingait()
+									it.thrownException.printStackTrace(PrintWriter(writer))
+									excep.append(it.thrownException.stackTraceToString())
+								} else {
+									excep.append(it.toString())
+								}
+							} else if (sinkType == JAVA) {
+								sb.append(it)
 							} else {
-								excep.append(it.toString())
-							}
-						} else if (sinkType == JAVA) {
-							sb.append(it)
-						} else {
-							// maybe do something with it?
-						}
-					}
-				
-				override fun getSupportedSinks(
-					sinkType: OutputSinkFactory.SinkType?,
-					available: MutableCollection<OutputSinkFactory.SinkClass>?
-				): MutableList<OutputSinkFactory.SinkClass> =
-					if (sinkType == JAVA) mutableListOf(STRING) else mutableListOf(EXCEPTION_MESSAGE)
-			}
-			val source = object: ClassFileSource {
-				override fun getPossiblyRenamedPath(path: String): String = path
-				
-				override fun getClassFileContent(path: String): Pair<ByteArray, String> {
-					try {
-						if (path == classFileName) {
-							return Pair(byteProvider().readBytes(), path)
-						}
-					} catch (t: Throwable) {
-					}
-					
-					try {
-						path.removeSuffix("/").let { path ->
-							classPathProvider(path)?.let {
-								return Pair(it.readBytes(), path)
+								// maybe do something with it?
 							}
 						}
-					} catch (t: Throwable) {
+					
+					override fun getSupportedSinks(
+						sinkType: OutputSinkFactory.SinkType?,
+						available: MutableCollection<OutputSinkFactory.SinkClass>?
+					): MutableList<OutputSinkFactory.SinkClass> =
+						if (sinkType == JAVA) mutableListOf(STRING) else mutableListOf(EXCEPTION_MESSAGE)
+				}
+				val source = object : ClassFileSource {
+					override fun getPossiblyRenamedPath(path: String): String = path
+					
+					override fun getClassFileContent(path: String): Pair<ByteArray, String> {
+						try {
+							if (path == classFileName) {
+								return Pair(byteProvider().readBytes(), path)
+							}
+						} catch (t: Throwable) {
+						}
+						
+						try {
+							path.removeSuffix("/").let { path ->
+								classPathProvider(path)?.let {
+									return Pair(it.readBytes(), path)
+								}
+							}
+						} catch (t: Throwable) {
+						}
+						
+						try {
+							return Pair(
+								ClassLoader.getSystemClassLoader().getResourceAsStream(path)!!.readBytes(),
+								path
+							)
+						} catch (t: Throwable) {
+						}
+						throw IOException("$path not found")
 					}
 					
-					try {
-						return Pair(ClassLoader.getSystemClassLoader().getResourceAsStream(path)!!.readBytes(), path)
-					} catch (t: Throwable) {
+					override fun addJar(jarPath: String?): MutableCollection<String> {
+						error("Not Supported")
 					}
-					throw IOException("$path not found")
+					
+					override fun informAnalysisRelativePathDetail(usePath: String?, classFilePath: String?) {}
 				}
+				val driver = CfrDriver.Builder()
+					.withOutputSink(sink)
+					.withClassFileSource(source)
+					.build()
 				
-				override fun addJar(jarPath: String?): MutableCollection<String> {
-					error("Not Supported")
-				}
+				driver.analyse(mutableListOf(classFileName))
 				
-				override fun informAnalysisRelativePathDetail(usePath: String?, classFilePath: String?) {}
+				sb.toString()
+			} catch (t: Throwable) {
+				t.printStackTrace()
+				t.stackTraceToString()
 			}
-			val driver = CfrDriver.Builder()
-				.withOutputSink(sink)
-				.withClassFileSource(source)
-				.build()
-			
-			driver.analyse(mutableListOf(classFileName))
-			
-			text.text = sb.toString()
-		} catch (t: Throwable) {
-			t.printStackTrace()
-			excep.append(t.stackTraceToString())
-		}
-		if (text.text.isBlank()) {
-			text.text = excep.toString()
+			if (decompiled.isBlank()) {
+				text.text = excep.toString()
+			} else {
+				text.text = decompiled
+			}
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package dev.binclub.bingait.plugins.cfr
 
+import dev.binclub.bingait.api.BingaitThreadpool
 import dev.binclub.bingait.api.util.tree.BinJTree
 import dev.binclub.bingait.api.util.BinTreeNode
 import dev.binclub.bingait.api.util.BinTreeRenderer
@@ -96,160 +97,165 @@ class CfrTreePanel(
 	init {
 		layout = GridLayout()
 		
-		try {
-			val tree = BinJTree()
-			add(JScrollPane(tree))
-			tree.cellRenderer = BinTreeRenderer()
-			tree.model = DefaultTreeModel(DefaultMutableTreeNode())
-			val root = tree.model.cast<DefaultTreeModel>().root.cast<DefaultMutableTreeNode>()
-			
-			tree.isRootVisible = true
-			tree.showsRootHandles = true
-			
-			val tokens = Stack<DefaultMutableTreeNode>()
-			tokens.push(root)
-			val currentLine = ArrayList<BinTreeText>()
-			fun ArrayList<BinTreeText>.isNotBlank() = this.isNotEmpty() && this.any { it.text.isNotBlank() }
-			fun ArrayList<BinTreeText>.copy() = this.clone().cast<ArrayList<BinTreeText>>()
-			
-			val sink = object: OutputSinkFactory {
-				override fun <T: Any?> getSink(
-					sinkType: OutputSinkFactory.SinkType,
-					sinkClass: OutputSinkFactory.SinkClass
-				): OutputSinkFactory.Sink<T> = OutputSinkFactory.Sink<T> {
-					if (sinkType == JAVA) {
-						it as SinkReturns.Token
+		BingaitThreadpool.submitTask("Decompiling with CFR") {
+			try {
+				val tree = BinJTree()
+				add(JScrollPane(tree))
+				tree.cellRenderer = BinTreeRenderer()
+				tree.model = DefaultTreeModel(DefaultMutableTreeNode())
+				val root = tree.model.cast<DefaultTreeModel>().root.cast<DefaultMutableTreeNode>()
+				
+				tree.isRootVisible = true
+				tree.showsRootHandles = true
+				
+				val tokens = Stack<DefaultMutableTreeNode>()
+				tokens.push(root)
+				val currentLine = ArrayList<BinTreeText>()
+				fun ArrayList<BinTreeText>.isNotBlank() = this.isNotEmpty() && this.any { it.text.isNotBlank() }
+				fun ArrayList<BinTreeText>.copy() = this.clone().cast<ArrayList<BinTreeText>>()
+				
+				val sink = object : OutputSinkFactory {
+					override fun <T : Any?> getSink(
+						sinkType: OutputSinkFactory.SinkType,
+						sinkClass: OutputSinkFactory.SinkClass
+					): OutputSinkFactory.Sink<T> = OutputSinkFactory.Sink<T> {
+						if (sinkType == JAVA) {
+							it as SinkReturns.Token
+							
+							when (it.tokenType) {
+								SinkReturns.TokenType.SEPARATOR -> {
+									when (val txt = it.text) {
+										"{" -> {
+											val newLine = BinTreeNode(currentLine.copy())
+											tokens.peek().add(newLine)
+											tokens.push(newLine)
+											currentLine.clear()
+										}
+										"}" -> {
+											if (currentLine.isNotBlank()) {
+												tokens.peek().add(BinTreeNode(currentLine.copy()))
+											}
+											tokens.pop()
+											currentLine.clear()
+										}
+										else -> currentLine += BinTreeText(txt)
+									}
+								}
+								SinkReturns.TokenType.COMMENT -> {
+									when (val txt = it.text) {
+										"/* " -> {
+											val newLine = BinTreeNode(currentLine.copy())
+											tokens.peek().add(newLine)
+											tokens.push(newLine)
+											currentLine.clear()
+										}
+										" */" -> {
+											if (currentLine.isNotBlank()) {
+												tokens.peek().add(BinTreeNode(currentLine.copy()))
+											}
+											tokens.pop()
+											currentLine.clear()
+										}
+										else -> currentLine += BinTreeText(txt)
+									}
+								}
+								SinkReturns.TokenType.NEWLINE, SinkReturns.TokenType.EOF -> {
+									if (currentLine.isNotBlank()) {
+										tokens.peek().add(BinTreeNode(currentLine.copy()))
+									}
+									currentLine.clear()
+								}
+								SinkReturns.TokenType.KEYWORD -> {
+									currentLine += BinTreeText(it.text, Color(0xB092EA))
+								}
+								SinkReturns.TokenType.IDENTIFIER -> {
+									currentLine += if (it.text == "this") {
+										BinTreeText(it.text, Color(0xB092EA))
+									} else {
+										BinTreeText(it.text)
+									}
+								}
+								SinkReturns.TokenType.LITERAL -> {
+									currentLine += BinTreeText(it.text, Color(0xBDE88D))
+								}
+								SinkReturns.TokenType.OPERATOR -> {
+									currentLine += BinTreeText(it.text, Color(0x89DDFF))
+								}
+								SinkReturns.TokenType.FIELD, SinkReturns.TokenType.METHOD -> {
+									currentLine += BinTreeText(it.text, Color(0x62A9C6))
+								}
+								else -> {
+									currentLine += if (it.text != null && it.text.trim() in keyWords) {
+										BinTreeText(it.text, Color(0xB092EA))
+									} else {
+										BinTreeText(it.text)
+									}
+								}
+							}
+						}
+					}
+					
+					override fun getSupportedSinks(
+						sinkType: OutputSinkFactory.SinkType?,
+						available: MutableCollection<OutputSinkFactory.SinkClass>?
+					): MutableList<OutputSinkFactory.SinkClass> = mutableListOf(TOKEN_STREAM)
+				}
+				val source = object : ClassFileSource {
+					override fun getPossiblyRenamedPath(path: String): String = path
+					
+					override fun getClassFileContent(path: String): Pair<ByteArray, String> {
+						try {
+							if (path == classFileName) {
+								return Pair(byteProvider().readBytes(), path)
+							}
+						} catch (t: Throwable) {
+						}
 						
-						when (it.tokenType) {
-							SinkReturns.TokenType.SEPARATOR -> {
-								when (val txt = it.text) {
-									"{" -> {
-										val newLine = BinTreeNode(currentLine.copy())
-										tokens.peek().add(newLine)
-										tokens.push(newLine)
-										currentLine.clear()
-									}
-									"}" -> {
-										if (currentLine.isNotBlank()) {
-											tokens.peek().add(BinTreeNode(currentLine.copy()))
-										}
-										tokens.pop()
-										currentLine.clear()
-									}
-									else -> currentLine += BinTreeText(txt)
+						try {
+							path.removeSuffix("/").let { path ->
+								classPathProvider(path)?.let {
+									return Pair(it.readBytes(), path)
 								}
 							}
-							SinkReturns.TokenType.COMMENT -> {
-								when (val txt = it.text) {
-									"/* " -> {
-										val newLine = BinTreeNode(currentLine.copy())
-										tokens.peek().add(newLine)
-										tokens.push(newLine)
-										currentLine.clear()
-									}
-									" */" -> {
-										if (currentLine.isNotBlank()) {
-											tokens.peek().add(BinTreeNode(currentLine.copy()))
-										}
-										tokens.pop()
-										currentLine.clear()
-									}
-									else -> currentLine += BinTreeText(txt)
-								}
-							}
-							SinkReturns.TokenType.NEWLINE, SinkReturns.TokenType.EOF -> {
-								if (currentLine.isNotBlank()) {
-									tokens.peek().add(BinTreeNode(currentLine.copy()))
-								}
-								currentLine.clear()
-							}
-							SinkReturns.TokenType.KEYWORD -> {
-								currentLine += BinTreeText(it.text, Color(0xB092EA))
-							}
-							SinkReturns.TokenType.IDENTIFIER -> {
-								currentLine += if (it.text == "this") {
-									BinTreeText(it.text, Color(0xB092EA))
-								} else {
-									BinTreeText(it.text)
-								}
-							}
-							SinkReturns.TokenType.LITERAL -> {
-								currentLine += BinTreeText(it.text, Color(0xBDE88D))
-							}
-							SinkReturns.TokenType.OPERATOR -> {
-								currentLine += BinTreeText(it.text, Color(0x89DDFF))
-							}
-							SinkReturns.TokenType.FIELD, SinkReturns.TokenType.METHOD -> {
-								currentLine += BinTreeText(it.text, Color(0x62A9C6))
-							}
-							else -> {
-								currentLine += if (it.text != null && it.text.trim() in keyWords) {
-									BinTreeText(it.text, Color(0xB092EA))
-								} else {
-									BinTreeText(it.text)
-								}
-							}
+						} catch (t: Throwable) {
 						}
-					}
-				}
-				
-				override fun getSupportedSinks(
-					sinkType: OutputSinkFactory.SinkType?,
-					available: MutableCollection<OutputSinkFactory.SinkClass>?
-				): MutableList<OutputSinkFactory.SinkClass> = mutableListOf(TOKEN_STREAM)
-			}
-			val source = object: ClassFileSource {
-				override fun getPossiblyRenamedPath(path: String): String = path
-				
-				override fun getClassFileContent(path: String): Pair<ByteArray, String> {
-					try {
-						if (path == classFileName) {
-							return Pair(byteProvider().readBytes(), path)
+						
+						try {
+							return Pair(
+								ClassLoader.getSystemClassLoader().getResourceAsStream(path)!!.readBytes(),
+								path
+							)
+						} catch (t: Throwable) {
 						}
-					} catch (t: Throwable) {
+						throw IOException("$path not found")
 					}
 					
-					try {
-						path.removeSuffix("/").let { path ->
-							classPathProvider(path)?.let {
-								return Pair(it.readBytes(), path)
-							}
-						}
-					} catch (t: Throwable) {
+					override fun addJar(jarPath: String?): MutableCollection<String> {
+						error("Not Supported")
 					}
 					
-					try {
-						return Pair(ClassLoader.getSystemClassLoader().getResourceAsStream(path)!!.readBytes(), path)
-					} catch (t: Throwable) {
-					}
-					throw IOException("$path not found")
+					override fun informAnalysisRelativePathDetail(usePath: String?, classFilePath: String?) {}
 				}
+				val driver = CfrDriver.Builder()
+					.withOutputSink(sink)
+					.withClassFileSource(source)
+					.build()
 				
-				override fun addJar(jarPath: String?): MutableCollection<String> {
-					error("Not Supported")
-				}
+				driver.analyse(mutableListOf(classFileName))
 				
-				override fun informAnalysisRelativePathDetail(usePath: String?, classFilePath: String?) {}
+				tree.expandRow(0)
+			} catch (t: Throwable) {
+				t.printStackTrace()
+				
+				val sw = StringWriter()
+				t.printStackTrace(PrintWriter(sw))
+				
+				val text = JTextArea()
+				add(JScrollPane(text))
+				
+				text.isEditable = false
+				text.text = sw.toString()
 			}
-			val driver = CfrDriver.Builder()
-				.withOutputSink(sink)
-				.withClassFileSource(source)
-				.build()
-			
-			driver.analyse(mutableListOf(classFileName))
-			
-			tree.expandRow(0)
-		} catch (t: Throwable) {
-			t.printStackTrace()
-			
-			val sw = StringWriter()
-			t.printStackTrace(PrintWriter(sw))
-			
-			val text = JTextArea()
-			add(JScrollPane(text))
-			
-			text.isEditable = false
-			text.text = sw.toString()
 		}
 	}
 }
