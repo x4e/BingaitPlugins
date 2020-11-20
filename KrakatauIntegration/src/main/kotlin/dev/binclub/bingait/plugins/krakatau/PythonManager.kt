@@ -90,6 +90,12 @@ object PythonManager {
 		
 		val pb = ProcessBuilder(pythonPath, codeFile.absolutePath)
 		val proc = pb.start()
+		println("""
+			Krakatau stdout:
+			${proc.inputStream.readBytes().decodeToString()}
+			stderr:
+			${proc.errorStream.readBytes().decodeToString()}
+		""".trimIndent())
 		proc.waitFor()
 	}
 }

@@ -34,9 +34,7 @@ class KrakatauResourcePanel(
 			try {
 				text.text = KrakatauIntegration.decompile(treeItem, classFileName, byteProvider().readBytes(), classPathProvider)
 			} catch (t: Throwable) {
-				if (text.text.isBlank()) {
-					text.text = t.stackTraceToString()
-				}
+				text.text = t.stackTraceToString()
 			}
 		}
 	}

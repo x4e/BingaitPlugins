@@ -3,6 +3,8 @@ package dev.binclub.bingait.plugins.krakatau
 import dev.binclub.bingait.api.BingaitPlugin
 import dev.binclub.bingait.api.event.events.ResourcePanelTabsEvent
 import dev.binclub.bingait.api.settings.StringSetting
+import dev.binclub.bingait.api.util.recursivelyDelete
+import dev.binclub.bingait.api.util.traverseDeepFiles
 import dev.binclub.bingait.api.util.tree.ArchiveEntryTreeCell
 import dev.binclub.bingait.api.util.tree.FileTreeCell
 import java.io.DataInput
@@ -51,16 +53,21 @@ object KrakatauIntegration: BingaitPlugin() {
 		
 		val tmpFile = File.createTempFile("bingait_krakatau_marker", "")
 		val outputDir = File(tmpFile.parentFile, "bingait_krakatau_output")
+		outputDir.recursivelyDelete()
 		outputDir.mkdirs()
 		tmpFile.delete()
 		
-		return when (treeItem) {
+		return a@when (treeItem) {
 			is FileTreeCell -> {
-				val className = classFileName.removeSuffix(".class")
-				val classpath = arrayListOf(treeItem.file.absolutePath, rt)
+				val className = treeItem.file.nameWithoutExtension
+				val classpath = arrayListOf(treeItem.file.parentFile.absolutePath, rt)
 				val classes = arrayListOf(className)
 				PythonManager.decompileClass(pythonPath, classpath, classes, outputDir.absolutePath)
-				File(outputDir, "$className.java").readText()
+				var outputFile: File? = null
+				outputDir.traverseDeepFiles { f ->
+					outputFile = f
+				}
+				return outputFile?.readText() ?: error("No output file")
 			}
 			is ArchiveEntryTreeCell -> {
 				val className = classFileName.removeSuffix(".class")
