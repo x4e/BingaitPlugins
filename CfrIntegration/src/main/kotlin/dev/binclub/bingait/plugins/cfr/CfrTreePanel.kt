@@ -105,8 +105,8 @@ class CfrTreePanel(
 				tree.model = DefaultTreeModel(DefaultMutableTreeNode())
 				val root = tree.model.cast<DefaultTreeModel>().root.cast<DefaultMutableTreeNode>()
 				
-				tree.isRootVisible = true
 				tree.showsRootHandles = true
+				tree.isRootVisible = false
 				
 				val tokens = Stack<DefaultMutableTreeNode>()
 				tokens.push(root)

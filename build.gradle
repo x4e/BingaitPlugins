@@ -14,6 +14,7 @@ subprojects {
 	project(':DiscordRichPresence')
 	project(':FernflowerIntegration')
 	project(':KrakatauIntegration')
+	project(':AsmIntegration')
 	
 	sourceCompatibility = 1.8
 	targetCompatibility = 1.8

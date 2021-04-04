@@ -1,0 +1,36 @@
+plugins {
+	id 'org.jetbrains.kotlin.jvm'
+}
+
+repositories {
+	mavenCentral()
+	maven { url 'https://jitpack.io' }
+}
+
+configurations {
+	include
+}
+
+dependencies {
+	implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation files('/run/media/cook/DATA/Computing/BinGait/build/libs/bingait-api.jar')
+	implementation "org.ow2.asm:asm:9.0"
+	include "org.ow2.asm:asm:9.0"
+	implementation "org.ow2.asm:asm-commons:9.0"
+	include "org.ow2.asm:asm-commons:9.0"
+}
+
+jar {
+	from { configurations.include.collect { it.isDirectory() ? it : zipTree(it) } }
+	from "LICENSE"
+}
+
+compileKotlin {
+	kotlinOptions.jvmTarget = 1.8
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '6.3'
+}
+
+project.buildDir = project.parent.buildDir
